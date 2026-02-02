@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUDI AI | Industrial Neural Foundry</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;800&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        /* =========================================
+           1. CORE AESTHETICS (Cyberpunk Industrial)
+           ========================================= */
+        :root {
+            --bg: #030305;
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --glass: rgba(10, 10, 12, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --font-main: 'Rajdhani', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+        
+        body { 
+            background-color: var(--bg); 
+            color: white; 
+            font-family: var(--font-main); 
+            overflow-x: hidden; 
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 4px; }
+
+        /* =========================================
+           2. 3D BACKGROUND LAYER
+           ========================================= */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1;
+            opacity: 0.4; /* Subtle background */
+        }
+
+        /* =========================================
+           3. UI COMPONENTS
+           ========================================= */
+        /* NAVIGATION */
+        nav {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-family: var(--font-code);
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -1px;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span { color: var(--neon-pink); }
+        
+        .nav-links button {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 25px;
+            font-family: var(--font-code);
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        
+        .nav-links button:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        /* HERO SECTION */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 10%;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 6rem;
+            line-height: 0.9;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            mix-blend-mode: exclusion;
+        }
+
+        .hero h1 .glitch {
+            position: relative;
+            color: white;
+        }
+        
+        .hero h1 .glitch::before, .hero h1 .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg);
+        }
+        .hero h1 .glitch::before {
+            left: 2px; text-shadow: -1px 0 var(--neon-pink);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .hero h1 .glitch::after {
+            left: -2px; text-shadow: -1px 0 var(--neon-blue);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        .hero p {
+            font-family: var(--font-code);
+            color: #aaa;
+            max-width: 600px;
+            margin-bottom: 40px;
+            border-left: 2px solid var(--neon-pink);
+            padding-left: 20px;
+        }
+
+        /* TERMINAL WINDOW */
+        .terminal-window {
+            position: absolute;
+            bottom: 50px; right: 50px;
+            width: 400px; height: 250px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #333;
+            border-top: 2px solid var(--neon-blue);
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: #0f0;
+            padding: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .terminal-header {
+            display: flex; justify-content: space-between;
+            color: #666; font-size: 0.7rem; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px;
+        }
+
+        /* GRID SECTIONS */
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2px;
+            background: #222; /* Gap color */
+            padding: 100px 5%;
+        }
+
+        .card {
+            background: var(--bg);
+            padding: 50px 30px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: var(--neon-pink);
+            transform: translateY(-5px);
+        }
+
+        .card h3 { font-size: 2rem; margin-bottom: 15px; }
+        .card p { color: #888; font-size: 1rem; line-height: 1.6; }
+        .card .icon { font-size: 3rem; color: var(--neon-blue); margin-bottom: 20px; }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid #333;
+            padding: 50px;
+            text-align: center;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* ANIMATIONS */
+        @keyframes glitch-anim {
+            0% { clip: rect(30px, 9999px, 10px, 0); }
+            20% { clip: rect(80px, 9999px, 90px, 0); }
+            40% { clip: rect(10px, 9999px, 50px, 0); }
+            60% { clip: rect(40px, 9999px, 20px, 0); }
+            80% { clip: rect(90px, 9999px, 80px, 0); }
+            100% { clip: rect(20px, 9999px, 60px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(60px, 9999px, 30px, 0); }
+            20% { clip: rect(10px, 9999px, 70px, 0); }
+            40% { clip: rect(90px, 9999px, 10px, 0); }
+            60% { clip: rect(20px, 9999px, 80px, 0); }
+            80% { clip: rect(50px, 9999px, 30px, 0); }
+            100% { clip: rect(70px, 9999px, 40px, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <nav>
+        <a href="#" class="logo">
+            <svg width="30" height="30" viewBox="0 0 100 100">
+                <path d="M50 0 L100 25 L100 75 L50 100 L0 75 L0 25 Z" fill="none" stroke="#ff0055" stroke-width="5"/>
+                <circle cx="50" cy="50" r="15" fill="#00f3ff"/>
+            </svg>
+            NUDI<span>.AI</span>
+        </a>
+        <div class="nav-links">
+            <button onclick="alert('Accessing Foundry...')">Access Terminal</button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1 class="glitch" data-text="INDUSTRIAL">INDUSTRIAL</h1>
+        <h1 style="color: transparent; -webkit-text-stroke: 2px white; opacity: 0.5;">INTELLIGENCE</h1>
+        
+        <p>
+            V-2026 TRIPLE-STACK ARCHITECTURE.<br>
+            The world's first unrestricted neural foundry built on Torch + TensorFlow.
+            Zero Liability. Infinite Scale.
+        </p>
+
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <span>root@nudi-foundry:~</span>
+                <span>● CONNECTED</span>
+            </div>
+            <div id="terminal-content">
+                > INITIALIZING KERNEL...<br>
+                > LOADING 260 LAYERS...<br>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-grid">
+        <div class="card">
+            <div class="icon">⚡</div>
+            <h3>Triple Stack</h3>
+            <p>Seamlessly fused PyTorch, TensorFlow, and Keras engines providing the broadest compatibility matrix in the industry.</p>
+        </div>
+        <div class="card">
+            <div class="icon">🧬</div>
+            <h3>Genetic Drift</h3>
+            <p>Proprietary 1000-frame video evolution algorithm that simulates biological mutations in latent space.</p>
+        </div>
+        <div class="card">
+            <div class="icon">🛡️</div>
+            <h3>Shadow Vault</h3>
+            <p>Local-only processing ensures your data never leaves the premises. Zero server logs. Absolute forensic privacy.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>NUDI INDUSTRIAL SYSTEMS © 2026 , NUDI INDUSTRIAL SYSTEMS and Nudi .AI is TM of hjk-inc</p>
+        <p style="margin-top:10px; opacity: 0.5;">SYSTEM STATUS: OPERATIONAL | REGION: GLOBAL</p>
+    </footer>
+
+    <script>
+        // 1. THREE.JS 3D BACKGROUND (Neural Network Globe)
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Particles
+        const geometry = new THREE.IcosahedronGeometry(3, 2); // Detailed Globe
+        const material = new THREE.PointsMaterial({
+            color: 0x00f3ff,
+            size: 0.04,
+            transparent: true,
+            opacity: 0.8
+        });
+        const sphere = new THREE.Points(geometry, material);
+        scene.add(sphere);
+
+        // Wireframe Core
+        const wireGeo = new THREE.IcosahedronGeometry(2, 1);
+        const wireMat = new THREE.MeshBasicMaterial({
+            color: 0xff0055,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+        const core = new THREE.Mesh(wireGeo, wireMat);
+        scene.add(core);
+
+        camera.position.z = 6;
+
+        // Mouse Interaction
+        let mouseX = 0;
+        let mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            sphere.rotation.y += 0.002;
+            sphere.rotation.x += 0.001;
+            
+            // Mouse Parallax
+            sphere.rotation.y += mouseX * 0.05;
+            sphere.rotation.x += mouseY * 0.05;
+
+            // Pulse Effect
+            sphere.scale.setScalar(1 + Math.sin(time) * 0.05);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Responsive Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 2. TERMINAL TYPEWRITER EFFECT
+        const terminalLogs = [
+            "> MOUNTING 'imgai' VOLUME...",
+            "> FOUND 200 ASSETS...",
+            "> PYTORCH: ACTIVE (v2.1.0)",
+            "> TENSORFLOW: ACTIVE (v2.14)",
+            "> OPTIMIZING 260 LAYERS...",
+            "> BATCH PROCESS: STANDBY",
+            "> WAITING FOR ADMIN INPUT..."
+        ];
+        
+        const termContent = document.getElementById('terminal-content');
+        let logIndex = 0;
+
+        function typeLog() {
+            if(logIndex < terminalLogs.length) {
+                const p = document.createElement('div');
+                p.textContent = terminalLogs[logIndex];
+                p.style.opacity = 0;
+                termContent.appendChild(p);
+                
+                // Fade in
+                gsap.to(p, {opacity: 1, duration: 0.5});
+                
+                logIndex++;
+                setTimeout(typeLog, 800); // Speed of logs
+            } else {
+                // Blink cursor at end
+                const cursor = document.createElement('span');
+                cursor.innerHTML = "_";
+                cursor.style.animation = "blink 1s infinite";
+                termContent.appendChild(cursor);
+            }
+        }
+        
+        // Start terminal after 1 second
+        setTimeout(typeLog, 1000);
+
+        // GSAP Intro Animation
+        gsap.from(".hero h1", {y: 50, opacity: 0, duration: 1, delay: 0.5});
+        gsap.from(".hero p", {x: -50, opacity: 0, duration: 1, delay: 0.8});
+        gsap.from(".card", {y: 100, opacity: 0, duration: 0.8, stagger: 0.2, scrollTrigger: ".section-grid"});
+
+    </script>
+</body>
+</html>
